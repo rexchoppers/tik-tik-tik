@@ -3,3 +3,4 @@ numbers/
 sentences/
 beep.wav
 beep_leap.wav
+__pycache__/
