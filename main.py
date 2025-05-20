@@ -1,4 +1,5 @@
 # This is a sample Python script.
+import os
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
@@ -14,6 +15,7 @@ from pydub.generators import Sine
 # Every 10 seconds, the voice announces the time in the UK
 SPEAKING_INTERVAL = 10
 BEEPS = 3
+SPEAKER = "p229"
 
 # Get the current time in the UK
 def get_uk_time():
@@ -58,10 +60,29 @@ if __name__ == '__main__':
     make_beep_sequence("beep.wav")
     make_beep_sequence("beep_leap.wav", leap=True)
 
+    # Initialise TTS
+    tts = TTS(model_name="tts_models/en/vctk/vits", progress_bar=False, gpu=False)
+
+    # Create numbers
+    os.makedirs("numbers", exist_ok=True)
+    numbers = [str(i) for i in range(0, 61)]
+    for i in range(0, 61):
+        numbers[i] = tts.tts_to_file(text=numbers[i], speaker="p229", file_path=f"numbers/{i}.wav")
+
+    # Create sentences
+    os.makedirs("sentences", exist_ok=True)
+    sentences = {
+        "sequence_start": "At the third stroke, the time will be",
+        "seconds": "seconds",
+        "precisely": "precisely",
+        "oclock": "o'clock",
+    }
+    for key, value in sentences.items():
+        sentences[key] = tts.tts_to_file(text=value, speaker="p229", file_path=f"sentences/{key}.wav")
+
     while True:
         now = datetime.now()
 
-        # Generate beeps
 
         sleep_secs = SPEAKING_INTERVAL - (time.time() % SPEAKING_INTERVAL)
         time.sleep(sleep_secs)
