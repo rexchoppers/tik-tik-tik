@@ -71,6 +71,7 @@ multidict==6.4.4
 murmurhash==1.0.12
 networkx==2.8.8
 nltk==3.9.1
+ntplib==0.4.0
 num2words==0.5.14
 numba==0.61.2
 numpy==1.26.4
