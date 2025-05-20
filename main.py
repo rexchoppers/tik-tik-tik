@@ -118,7 +118,7 @@ if __name__ == '__main__':
     os.makedirs("numbers", exist_ok=True)
     numbers = [str(i) for i in range(0, 61)]
     for i in range(0, 61):
-        numbers[i] = tts.tts_to_file(text=numbers[i], speaker="p229", file_path=f"numbers/{i}.wav")
+        numbers[i] = tts.tts_to_file(text=numbers[i], speaker=SPEAKER, file_path=f"numbers/{i}.wav")
 
     # Create sentences
     os.makedirs("sentences", exist_ok=True)
@@ -130,7 +130,7 @@ if __name__ == '__main__':
         "and": "and"
     }
     for key, value in sentences.items():
-        sentences[key] = tts.tts_to_file(text=value, speaker="p229", file_path=f"sentences/{key}.wav")
+        sentences[key] = tts.tts_to_file(text=value, speaker=SPEAKER, file_path=f"sentences/{key}.wav")
 
     # Create path for stream
     if not os.path.exists(OUTPUT):
