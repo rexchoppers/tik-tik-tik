@@ -1,4 +1,5 @@
 # This is a sample Python script.
+import io
 import os
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
@@ -16,6 +17,7 @@ from pydub.generators import Sine
 SPEAKING_INTERVAL = 10
 BEEPS = 3
 SPEAKER = "p229"
+OUTPUT = "/tmp/audio.pcm"
 
 # Get the current time in the UK
 def get_uk_time():
@@ -23,7 +25,7 @@ def get_uk_time():
     ntp_utc = datetime.fromtimestamp(ntp.tx_time, tz=timezone.utc)
 
     uk_time = ntp_utc.astimezone(ZoneInfo('Europe/London'))
-    return uk_time
+    return uk_time, ntp.leap > 1
 
 
 # Return NTP as UTC
@@ -54,6 +56,35 @@ def make_beep_sequence(filename: str, leap: bool = False):
 
     sequence.export(filename, format="wav")
 
+def create_time(uk_time, leap):
+    intro = AudioSegment.from_wav("sentences/sequence_start.wav")
+    beeps = AudioSegment.from_wav("beep_leap.wav" if leap else "beep.wav")
+    hour = AudioSegment.from_wav(f"numbers/{uk_time.hour}.wav")
+    minute = AudioSegment.from_wav(f"numbers/{uk_time.minute}.wav")
+
+    parts = [beeps, intro, hour]
+
+    if uk_time.minute == 0:
+        parts += [AudioSegment.from_wav("sentences/oclock.wav")]
+    else:
+        parts += [
+            AudioSegment.from_wav("sentences/and.wav"),
+            minute
+        ]
+
+    parts += [AudioSegment.from_wav("sentences/precisely.wav")]
+
+    clip = sum(parts)
+
+    duration_ms = 10_000
+    if len(clip) < duration_ms:
+        silence = AudioSegment.silent(duration=duration_ms - len(clip))
+        clip += silence
+    else:
+        clip = clip[:duration_ms]
+
+    return clip.set_frame_rate(22050).set_channels(1)
+
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     # Generate beeps on application start
@@ -76,13 +107,28 @@ if __name__ == '__main__':
         "seconds": "seconds",
         "precisely": "precisely",
         "oclock": "o'clock",
+        "and": "and"
     }
     for key, value in sentences.items():
         sentences[key] = tts.tts_to_file(text=value, speaker="p229", file_path=f"sentences/{key}.wav")
 
-    while True:
-        now = datetime.now()
+    # Create path for stream
+    if not os.path.exists(OUTPUT):
+        os.mkfifo(OUTPUT)
 
+    # Create pipe
+    fifo = open(OUTPUT, "wb")
+
+    while True:
+        uk_time, leap = get_uk_time()
+        audio = create_time(uk_time, leap)
+
+        print(f"[{uk_time.strftime('%H:%M:%S')}] Streaming...")
+
+        buf = io.BytesIO()
+        audio.export(buf, format="raw")  # raw PCM s16le
+        fifo.write(buf.getvalue())
+        fifo.flush()
 
         sleep_secs = SPEAKING_INTERVAL - (time.time() % SPEAKING_INTERVAL)
         time.sleep(sleep_secs)
