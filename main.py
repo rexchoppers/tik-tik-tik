@@ -1,13 +1,12 @@
 import io
 import os
 import time
-import ntplib
 
-from datetime import datetime, timezone
-from zoneinfo import ZoneInfo
+from datetime import datetime
 from TTS.api import TTS
 from pydub import AudioSegment
 from pydub.generators import Sine
+from ntp_utils import get_uk_time
 
 number_words = {
     0: "zero", 1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight", 9: "nine",
@@ -27,40 +26,6 @@ SPEAKING_INTERVAL = 10
 BEEPS = 3
 SPEAKER = "p312"
 OUTPUT = "/tmp/audio.pcm"
-
-ntp_sync_interval = 300
-last_ntp_sync = 0
-ntp_offset = 0
-leap_second_flag = False
-
-
-# Get the current time in the UK
-def get_uk_time():
-    global last_ntp_sync, ntp_offset, leap_second_flag
-
-    now = time.time()
-    if now - last_ntp_sync > ntp_sync_interval:
-        try:
-            ntp = retrieve_ntp_time()
-            ntp_offset = ntp.tx_time - now
-            leap_second_flag = ntp.leap > 1
-            last_ntp_sync = now
-            print(f"NTP synced. Offset: {ntp_offset:.6f}s, Leap: {leap_second_flag}")
-        except Exception as e:
-            print(f"[WARN] NTP sync failed: {e}")
-
-    corrected_time = datetime.fromtimestamp(now + ntp_offset, tz=timezone.utc)
-    uk_time = corrected_time.astimezone(ZoneInfo('Europe/London'))
-    return uk_time, leap_second_flag
-
-
-# Return NTP as UTC
-def retrieve_ntp_time():
-    ntp_client = ntplib.NTPClient()
-
-    response = ntp_client.request('uk.pool.ntp.org', version=3)
-    return response
-
 
 def make_beep_sequence(filename: str, leap: bool = False):
     beep = Sine(1000).to_audio_segment(duration=250).apply_gain(-3)
