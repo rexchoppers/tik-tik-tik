@@ -12,9 +12,12 @@ from ntp_utils import get_uk_time
 SPEAKING_INTERVAL = 10
 BEEPS = 3
 OUTPUT = "/tmp/audio.pcm"
-LANGUAGE = os.getenv("LANGUAGE", "en")
+# LANGUAGE = os.getenv("LANGUAGE", "en")
+LANGUAGE = os.getenv("LANGUAGE", "el")
 
 CONFIG = importlib.import_module(f"config.{LANGUAGE}")
+
+print(CONFIG)
 
 def make_beep_sequence(filename: str, leap: bool = False):
     beep = Sine(1000).to_audio_segment(duration=250).apply_gain(-3)
@@ -40,23 +43,27 @@ def make_beep_sequence(filename: str, leap: bool = False):
 def create_time(uk_time, leap):
     intro = AudioSegment.from_wav("sentences/sequence_start.wav")
     beeps = AudioSegment.from_wav("beep_leap.wav" if leap else "beep.wav")
-    hour = AudioSegment.from_wav(f"numbers/{uk_time.hour}.wav")
-    minute = AudioSegment.from_wav(f"numbers/{uk_time.minute}.wav")
-    second = AudioSegment.from_wav(f"numbers/{uk_time.second}.wav")
-
-    parts = [beeps, intro, hour]
 
     if uk_time.minute == 0:
-        parts += [
-            AudioSegment.from_wav("sentences/oclock.wav"),
-            AudioSegment.from_wav("sentences/precisely.wav")]
+        sentence = CONFIG.NUMBER_WORDS[uk_time.hour] + " " + CONFIG.SENTENCES["oclock"] + " " + CONFIG.SENTENCES["precisely"]
     else:
-        parts += [
-            minute,
-            AudioSegment.from_wav("sentences/and.wav"),
-            second,
-            AudioSegment.from_wav("sentences/seconds.wav"),
-        ]
+        sentence = CONFIG.NUMBER_WORDS[uk_time.hour] + " " + CONFIG.NUMBER_WORDS[uk_time.minute] +  " " + CONFIG.SENTENCES["and"] + CONFIG.NUMBER_WORDS[uk_time.second] + " " + CONFIG.SENTENCES["seconds"]
+
+    # Generate the sentence using TTS
+    model_args = {}
+
+    # Check if the model has a speaker argument
+    if CONFIG.SPEAKER:
+        model_args["speaker"] = CONFIG.SPEAKER
+
+    tts.tts_to_file(
+        text=sentence,
+        file_path="temp.wav",
+        **model_args
+    )
+
+    sentence = AudioSegment.from_wav("temp.wav")
+    parts = [beeps, intro, sentence]
 
     clip = sum(parts)
 
@@ -69,18 +76,13 @@ if __name__ == '__main__':
     make_beep_sequence("beep_leap.wav", leap=True)
 
     # Initialise TTS
-    tts = TTS(model_name=CONFIG.MODEL, progress_bar=False, gpu=False)
+    tts = TTS(model_name=CONFIG.MODEL)
 
-    # Create numbers
-    os.makedirs("numbers", exist_ok=True)
-    numbers = [str(i) for i in range(0, 61)]
-    for i in range(0, 61):
-        numbers[i] = tts.tts_to_file(text=CONFIG.NUMBER_WORDS[i] + ".", speaker=CONFIG.SPEAKER, file_path=f"numbers/{i}.wav")
+    model_args = {}
 
-    # Create sentences
-    os.makedirs("sentences", exist_ok=True)
-    for key, value in CONFIG.SENTENCES.items():
-        CONFIG.SENTENCES[key] = tts.tts_to_file(text=value, speaker=CONFIG.SPEAKER, file_path=f"sentences/{key}.wav")
+    # Check if the model has a speaker argument
+    if CONFIG.SPEAKER:
+        model_args["speaker"] = CONFIG.SPEAKER
 
     # Create path for stream
     if not os.path.exists(OUTPUT):
