@@ -16,9 +16,6 @@ LANGUAGE = os.getenv("LANGUAGE", "en")
 
 CONFIG = importlib.import_module(f"config.{LANGUAGE}")
 
-SPEAKER = "p312"
-
-
 def make_beep_sequence(filename: str, leap: bool = False):
     beep = Sine(1000).to_audio_segment(duration=250).apply_gain(-3)
     silence = AudioSegment.silent(duration=750)
@@ -78,12 +75,12 @@ if __name__ == '__main__':
     os.makedirs("numbers", exist_ok=True)
     numbers = [str(i) for i in range(0, 61)]
     for i in range(0, 61):
-        numbers[i] = tts.tts_to_file(text=CONFIG.NUMBER_WORDS[i] + ".", speaker=SPEAKER, file_path=f"numbers/{i}.wav")
+        numbers[i] = tts.tts_to_file(text=CONFIG.NUMBER_WORDS[i] + ".", speaker=CONFIG.SPEAKER, file_path=f"numbers/{i}.wav")
 
     # Create sentences
     os.makedirs("sentences", exist_ok=True)
     for key, value in CONFIG.SENTENCES.items():
-        CONFIG.SENTENCES[key] = tts.tts_to_file(text=value, speaker=SPEAKER, file_path=f"sentences/{key}.wav")
+        CONFIG.SENTENCES[key] = tts.tts_to_file(text=value, speaker=CONFIG.SPEAKER, file_path=f"sentences/{key}.wav")
 
     # Create path for stream
     if not os.path.exists(OUTPUT):
