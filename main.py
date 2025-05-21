@@ -76,10 +76,8 @@ def generator_loop():
         next_time = ((now // SPEAKING_INTERVAL) + 1) * SPEAKING_INTERVAL
         delay = next_time - now
 
-        # Wait just until the next boundary
         time.sleep(delay)
 
-        # Once it's exact, get the time
         uk_time, leap = get_uk_time()
 
         print(f"[{uk_time.strftime('%H:%M:%S')}] Generating audio for {SPEAKING_INTERVAL}s mark...")
@@ -126,8 +124,6 @@ def streaming_loop():
 
                 # Wait until it's time to play this audio
                 wait_time = scheduled_time - now
-
-                print("Wait time " + str(wait_time))
 
                 if wait_time > 0:
                     time.sleep(wait_time)
