@@ -1,6 +1,8 @@
 import importlib
 import io
 import os
+import queue
+import threading
 import time
 
 from TTS.api import TTS
@@ -16,6 +18,8 @@ LANGUAGE = os.getenv("LANGUAGE", "en")
 # LANGUAGE = os.getenv("LANGUAGE", "el")
 
 CONFIG = importlib.import_module(f"config.{LANGUAGE}")
+
+audio_queue = queue.Queue()
 
 print(CONFIG)
 
@@ -73,34 +77,56 @@ def create_time(uk_time, leap):
     return clip.set_frame_rate(22050).set_channels(1)
 
 
+def generator_loop():
+    while True:
+        uk_time, leap = get_uk_time()
+        print(f"[{uk_time.strftime('%H:%M:%S')}] Generating audio...")
+
+        audio = create_time(uk_time, leap)
+        audio_queue.put(audio)
+
+        time.sleep(SPEAKING_INTERVAL)
+
+def streaming_loop():
+    if not os.path.exists(OUTPUT):
+        os.mkfifo(OUTPUT)
+
+    fifo = open(OUTPUT, "wb")
+
+    current_audio = None
+    position = 0
+
+    SILENCE_CHUNK_MS = 200  # How big each silent chunk is
+    SAMPLE_RATE = 22050
+    CHANNELS = 1
+    SAMPLE_WIDTH = 2  # 16-bit audio => 2 bytes
+
+    SILENCE_CHUNK = AudioSegment.silent(duration=SILENCE_CHUNK_MS).set_frame_rate(SAMPLE_RATE).set_channels(CHANNELS)
+
+    while True:
+        if current_audio is None or position >= len(current_audio):
+            # Try to get next clip
+            try:
+                current_audio = audio_queue.get(timeout=0.1)
+                position = 0
+            except queue.Empty:
+                current_audio = SILENCE_CHUNK
+                position = 0
+
+        # Slice the audio into small chunk
+        chunk = current_audio[position:position + SILENCE_CHUNK_MS]
+        buf = io.BytesIO()
+        chunk.export(buf, format="raw")
+        fifo.write(buf.getvalue())
+        fifo.flush()
+
+        position += SILENCE_CHUNK_MS
+        time.sleep(SILENCE_CHUNK_MS / 1000.0)
+
 if __name__ == '__main__':
     # Generate beeps on application start
     make_beep_sequence("beep.wav")
     make_beep_sequence("beep_leap.wav", leap=True)
 
-    # Create path for stream
-    if not os.path.exists(OUTPUT):
-        os.mkfifo(OUTPUT)
-
-    # Create pipe
-    fifo = open(OUTPUT, "wb")
-
-    while True:
-        start = time.time()
-
-        uk_time, leap = get_uk_time()
-        audio = create_time(uk_time, leap)
-
-        print(f"[{uk_time.strftime('%H:%M:%S')}] Streaming...")
-
-        # Export the spoken time as raw PCM
-        buf = io.BytesIO()
-        audio.export(buf, format="raw")
-        fifo.write(buf.getvalue())
-        fifo.flush()
-
-        elapsed = time.time() - start
-        delay = SPEAKING_INTERVAL - (elapsed % SPEAKING_INTERVAL)
-        if delay < 0:
-            delay = 0
-        time.sleep(delay)
+    threading.Thread(target=generator_loop, daemon=True).start()
+    streaming_loop()
