@@ -99,7 +99,6 @@ def streaming_loop():
     SILENCE_CHUNK_MS = 200  # How big each silent chunk is
     SAMPLE_RATE = 22050
     CHANNELS = 1
-    SAMPLE_WIDTH = 2  # 16-bit audio => 2 bytes
 
     SILENCE_CHUNK = AudioSegment.silent(duration=SILENCE_CHUNK_MS).set_frame_rate(SAMPLE_RATE).set_channels(CHANNELS)
 
