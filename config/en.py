@@ -1,5 +1,6 @@
-# Dictionary mapping numbers to their word representations
-number_words = {
+MODEL = "tts_models/en/vctk/vits"
+
+NUMBER_WORDS = {
     0: "zero", 1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight", 9: "nine",
     10: "ten", 11: "eleven", 12: "twelve", 13: "thirteen", 14: "fourteen", 15: "fifteen", 16: "sixteen",
     17: "seventeen", 18: "eighteen", 19: "nineteen", 20: "twenty", 21: "twenty one", 22: "twenty two",
@@ -12,8 +13,7 @@ number_words = {
     56: "fifty six", 57: "fifty seven", 58: "fifty eight", 59: "fifty nine", 60: "sixty"
 }
 
-# Dictionary of sentences used for time announcements
-sentences = {
+SENTENCES = {
     "sequence_start": "At the third stroke, the time will be",
     "seconds": "seconds",
     "precisely": "precisely",
