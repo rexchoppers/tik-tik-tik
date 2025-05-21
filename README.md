@@ -15,7 +15,7 @@ The application is designed to mimic the traditional speaking clock service with
 
 ## Features
 
-- Accurate time synchronization using NTP
+- Accurate time synchronization using NTP (though some timing drift may occur due to voice generation processes)
 - Text-to-speech time announcements using the VCTK model
 - Special handling for leap seconds
 - Configurable announcement intervals
