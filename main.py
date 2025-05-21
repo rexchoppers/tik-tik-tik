@@ -2,7 +2,6 @@ import io
 import os
 import time
 
-from datetime import datetime
 from TTS.api import TTS
 from pydub import AudioSegment
 from pydub.generators import Sine
@@ -74,7 +73,7 @@ if __name__ == '__main__':
     os.makedirs("numbers", exist_ok=True)
     numbers = [str(i) for i in range(0, 61)]
     for i in range(0, 61):
-        numbers[i] = tts.tts_to_file(text=number_words[i], speaker=SPEAKER, file_path=f"numbers/{i}.wav")
+        numbers[i] = tts.tts_to_file(text=number_words[i] + ",", speaker=SPEAKER, file_path=f"numbers/{i}.wav")
 
     # Create sentences
     os.makedirs("sentences", exist_ok=True)
