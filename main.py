@@ -15,7 +15,7 @@ from ntp_utils import get_uk_time
 SPEAKING_INTERVAL = 10
 BEEPS = 3
 LANGUAGE = os.getenv("LANGUAGE", "en")
-# LANGUAGE = os.getenv("LANGUAGE", "el")
+
 
 CONFIG = importlib.import_module(f"config.{LANGUAGE}")
 
