@@ -1,3 +1,4 @@
+import importlib
 import io
 import os
 import time
@@ -6,13 +7,17 @@ from TTS.api import TTS
 from pydub import AudioSegment
 from pydub.generators import Sine
 from ntp_utils import get_uk_time
-from constants import number_words, sentences
 
 # Every 10 seconds, the voice announces the time in the UK
 SPEAKING_INTERVAL = 10
 BEEPS = 3
-SPEAKER = "p312"
 OUTPUT = "/tmp/audio.pcm"
+LANGUAGE = os.getenv("LANGUAGE", "en")
+
+CONFIG = importlib.import_module(f"config.{LANGUAGE}")
+
+SPEAKER = "p312"
+
 
 def make_beep_sequence(filename: str, leap: bool = False):
     beep = Sine(1000).to_audio_segment(duration=250).apply_gain(-3)
@@ -67,18 +72,18 @@ if __name__ == '__main__':
     make_beep_sequence("beep_leap.wav", leap=True)
 
     # Initialise TTS
-    tts = TTS(model_name="tts_models/en/vctk/vits", progress_bar=False, gpu=False)
+    tts = TTS(model_name=CONFIG.MODEL, progress_bar=False, gpu=False)
 
     # Create numbers
     os.makedirs("numbers", exist_ok=True)
     numbers = [str(i) for i in range(0, 61)]
     for i in range(0, 61):
-        numbers[i] = tts.tts_to_file(text=number_words[i] + ".", speaker=SPEAKER, file_path=f"numbers/{i}.wav")
+        numbers[i] = tts.tts_to_file(text=CONFIG.NUMBER_WORDS[i] + ".", speaker=SPEAKER, file_path=f"numbers/{i}.wav")
 
     # Create sentences
     os.makedirs("sentences", exist_ok=True)
-    for key, value in sentences.items():
-        sentences[key] = tts.tts_to_file(text=value, speaker=SPEAKER, file_path=f"sentences/{key}.wav")
+    for key, value in CONFIG.SENTENCES.items():
+        CONFIG.SENTENCES[key] = tts.tts_to_file(text=value, speaker=SPEAKER, file_path=f"sentences/{key}.wav")
 
     # Create path for stream
     if not os.path.exists(OUTPUT):
