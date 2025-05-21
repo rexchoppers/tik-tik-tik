@@ -12,8 +12,8 @@ from ntp_utils import get_uk_time
 SPEAKING_INTERVAL = 10
 BEEPS = 3
 OUTPUT = "/tmp/audio.pcm"
-# LANGUAGE = os.getenv("LANGUAGE", "en")
-LANGUAGE = os.getenv("LANGUAGE", "el")
+LANGUAGE = os.getenv("LANGUAGE", "en")
+# LANGUAGE = os.getenv("LANGUAGE", "el")
 
 CONFIG = importlib.import_module(f"config.{LANGUAGE}")
 
@@ -41,13 +41,12 @@ def make_beep_sequence(filename: str, leap: bool = False):
     sequence.export(filename, format="wav")
 
 def create_time(uk_time, leap):
-    intro = AudioSegment.from_wav("sentences/sequence_start.wav")
     beeps = AudioSegment.from_wav("beep_leap.wav" if leap else "beep.wav")
 
     if uk_time.minute == 0:
-        sentence = CONFIG.NUMBER_WORDS[uk_time.hour] + " " + CONFIG.SENTENCES["oclock"] + " " + CONFIG.SENTENCES["precisely"]
+        sentence = CONFIG.SENTENCES["sequence_start"] + " " + CONFIG.NUMBER_WORDS[uk_time.hour] + " " + CONFIG.SENTENCES["oclock"] + " " + CONFIG.SENTENCES["precisely"]
     else:
-        sentence = CONFIG.NUMBER_WORDS[uk_time.hour] + " " + CONFIG.NUMBER_WORDS[uk_time.minute] +  " " + CONFIG.SENTENCES["and"] + CONFIG.NUMBER_WORDS[uk_time.second] + " " + CONFIG.SENTENCES["seconds"]
+        sentence = CONFIG.SENTENCES["sequence_start"] + " " + CONFIG.NUMBER_WORDS[uk_time.hour] + ", " + CONFIG.NUMBER_WORDS[uk_time.minute] +  ", " + CONFIG.SENTENCES["and"] + " " + CONFIG.NUMBER_WORDS[uk_time.second] + " " + CONFIG.SENTENCES["seconds"]
 
     # Generate the sentence using TTS
     model_args = {}
@@ -56,6 +55,10 @@ def create_time(uk_time, leap):
     if CONFIG.SPEAKER:
         model_args["speaker"] = CONFIG.SPEAKER
 
+    tts = TTS(
+        model_name=CONFIG.MODEL
+    )
+
     tts.tts_to_file(
         text=sentence,
         file_path="temp.wav",
@@ -63,7 +66,7 @@ def create_time(uk_time, leap):
     )
 
     sentence = AudioSegment.from_wav("temp.wav")
-    parts = [beeps, intro, sentence]
+    parts = [beeps, sentence]
 
     clip = sum(parts)
 
@@ -74,15 +77,6 @@ if __name__ == '__main__':
     # Generate beeps on application start
     make_beep_sequence("beep.wav")
     make_beep_sequence("beep_leap.wav", leap=True)
-
-    # Initialise TTS
-    tts = TTS(model_name=CONFIG.MODEL)
-
-    model_args = {}
-
-    # Check if the model has a speaker argument
-    if CONFIG.SPEAKER:
-        model_args["speaker"] = CONFIG.SPEAKER
 
     # Create path for stream
     if not os.path.exists(OUTPUT):
