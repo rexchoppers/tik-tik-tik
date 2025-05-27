@@ -1,6 +1,6 @@
 # Tik-Tik-Tik
 
-A speaking clock application that announces the current UK time with precise NTP synchronization, inspired by the traditional telephone speaking clock service.
+A speaking clock application that announces the current UK time with NTP synchronization, inspired by the traditional telephone speaking clock service.
 
 ## Description
 
